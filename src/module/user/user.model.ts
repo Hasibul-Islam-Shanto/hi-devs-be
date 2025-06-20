@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
@@ -66,7 +66,7 @@ const userSchema = new Schema<IUser>(
     },
     profileImage: {
       type: String,
-      default: "https://example.com/default-profile-image.png",
+      default: 'https://example.com/default-profile-image.png',
     },
     isVerified: {
       type: Boolean,
@@ -79,33 +79,33 @@ const userSchema = new Schema<IUser>(
     bio: {
       type: String,
       trim: true,
-      default: "",
+      default: '',
     },
     location: {
       type: String,
       trim: true,
-      default: "",
+      default: '',
     },
     website: {
       type: String,
       trim: true,
-      default: "",
+      default: '',
     },
     socialLinks: {
       twitter: {
         type: String,
         trim: true,
-        default: "",
+        default: '',
       },
       linkedin: {
         type: String,
         trim: true,
-        default: "",
+        default: '',
       },
       github: {
         type: String,
         trim: true,
-        default: "",
+        default: '',
       },
     },
   },
@@ -114,5 +114,5 @@ const userSchema = new Schema<IUser>(
   },
 );
 
-export const User: Model<IUser> = mongoose.model<IUser>("User", userSchema);
+export const User: Model<IUser> = mongoose.model<IUser>('User', userSchema);
 export default User;

@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { IUser } from '../api/user/user.model';
 import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from '../config/envs';
+import { IUser } from '../module/user/user.model';
 
 interface TokenPayload {
   userId: string;

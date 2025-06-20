@@ -1,6 +1,6 @@
-import express from "express";
-import { authRouter } from "../api/auth/auth.route";
-import { userRouter } from "../api/user/user.route";
+import express from 'express';
+import { authRouter } from '../module/auth/auth.route';
+import { userRouter } from '../module/user/user.route';
 
 const router = express.Router();
 
@@ -11,11 +11,11 @@ interface RouterConfig {
 
 const routes: RouterConfig[] = [
   {
-    path: "/auth",
+    path: '/auth',
     router: authRouter,
   },
   {
-    path: "/users",
+    path: '/users',
     router: userRouter,
   },
 ];

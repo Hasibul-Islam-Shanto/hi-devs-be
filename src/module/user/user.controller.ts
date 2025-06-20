@@ -1,22 +1,22 @@
-import bcrypt from "bcryptjs";
-import { Request, Response } from "express";
-import { User } from "./user.model";
+import bcrypt from 'bcryptjs';
+import { Request, Response } from 'express';
+import { User } from './user.model';
 
 export const userSignup = async (
   req: Request,
   res: Response,
 ): Promise<Response | void> => {
   try {
-    console.log("Received signup request:", req.body);
+    console.log('Received signup request:', req.body);
     const { name, email, username, password } = req.body;
 
     if (!name || !email || !username || !password) {
-      return res.status(400).json({ error: "All fields are required" });
+      return res.status(400).json({ error: 'All fields are required' });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ error: "User already exists" });
+      return res.status(409).json({ error: 'User already exists' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -31,10 +31,10 @@ export const userSignup = async (
 
     res
       .status(201)
-      .json({ message: "User registered successfully", user: newUser });
+      .json({ message: 'User registered successfully', user: newUser });
   } catch (error) {
-    console.error("Signup error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -46,13 +46,13 @@ export const getUserProfile = async (
     const userId = req.user?.userId;
 
     if (!userId) {
-      return res.status(401).json({ message: "Unauthorized access" });
+      return res.status(401).json({ message: 'Unauthorized access' });
     }
 
-    const user = await User.findById(userId).select("-password");
+    const user = await User.findById(userId).select('-password');
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' });
     }
 
     return res.status(200).json({
@@ -74,7 +74,7 @@ export const getUserProfile = async (
       },
     });
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error('Error fetching user profile:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
