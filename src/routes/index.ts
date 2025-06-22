@@ -1,3 +1,4 @@
+import { questionRouter } from '@/module/question/question.route';
 import express from 'express';
 import { authRouter } from '../module/auth/auth.route';
 import { userRouter } from '../module/user/user.route';
@@ -17,6 +18,10 @@ const routes: RouterConfig[] = [
   {
     path: '/users',
     router: userRouter,
+  },
+  {
+    path: '/questions',
+    router: questionRouter,
   },
 ];
 
