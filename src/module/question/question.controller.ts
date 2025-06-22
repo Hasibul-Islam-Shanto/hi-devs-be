@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Question from './question.model';
 
 export const postNewQuestion = async (
@@ -128,6 +129,44 @@ export const deleteQuestion = async (
     });
   } catch (error) {
     console.error('Error deleting question:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const likeQuestion = async (
+  req: Request,
+  res: Response,
+): Promise<Response | void> => {
+  try {
+    const questionId = req.params.id;
+    const userId = req.user?.userId;
+    const convertedUserId = new mongoose.Types.ObjectId(userId);
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized access' });
+    }
+
+    const question = await Question.findById(questionId);
+
+    if (!question) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+
+    if (question.likes.includes(convertedUserId)) {
+      question.likes = question.likes.filter((id) => id.toString() !== userId);
+    } else {
+      question.likes.push(convertedUserId);
+    }
+
+    await question.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Like status updated successfully',
+      likes: question.likes,
+    });
+  } catch (error) {
+    console.error('Error liking question:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

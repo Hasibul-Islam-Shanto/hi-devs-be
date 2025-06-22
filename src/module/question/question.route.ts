@@ -4,6 +4,7 @@ import {
   deleteQuestion,
   getAllQuestions,
   getQuestionById,
+  likeQuestion,
   postNewQuestion,
   updateQuestion,
 } from './question.controller';
@@ -38,3 +39,9 @@ questionRouter
     authMiddleware as RequestHandler,
     deleteQuestion as RequestHandler,
   );
+
+questionRouter.post(
+  '/likes/:id',
+  authMiddleware as RequestHandler,
+  likeQuestion as RequestHandler,
+);
