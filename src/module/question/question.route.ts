@@ -11,19 +11,13 @@ import {
 
 export const questionRouter = express.Router();
 
-questionRouter.post(
-  '/post-question',
-  authMiddleware as RequestHandler,
-  postNewQuestion as RequestHandler,
-);
-
-questionRouter.get(
-  '/all-questions',
-  authMiddleware as RequestHandler,
-  getAllQuestions as RequestHandler,
-);
-
 questionRouter
+  .post(
+    '/',
+    authMiddleware as RequestHandler,
+    postNewQuestion as RequestHandler,
+  )
+  .get('/', getAllQuestions as RequestHandler)
   .get(
     '/:id',
     authMiddleware as RequestHandler,
