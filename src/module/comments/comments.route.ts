@@ -3,7 +3,9 @@ import express, { RequestHandler } from 'express';
 import {
   deleteComment,
   getCommentsByQuestionId,
+  likeComment,
   postNewComment,
+  updateComment,
 } from './comments.controller';
 
 const commentsRouter = express.Router();
@@ -19,6 +21,17 @@ commentsRouter
     '/:commentId',
     authMiddleware as RequestHandler,
     deleteComment as RequestHandler,
+  )
+  .patch(
+    '/:commentId',
+    authMiddleware as RequestHandler,
+    updateComment as RequestHandler,
   );
+
+commentsRouter.post(
+  '/:commentId/like',
+  authMiddleware as RequestHandler,
+  likeComment as RequestHandler,
+);
 
 export default commentsRouter;

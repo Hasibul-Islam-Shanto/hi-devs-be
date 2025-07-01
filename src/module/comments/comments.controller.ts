@@ -143,3 +143,41 @@ export const deleteComment = async (
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const updateComment = async (
+  req: Request,
+  res: Response,
+): Promise<Response | void> => {
+  try {
+    const { commentId } = req.params;
+    const { comment } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized access' });
+    }
+
+    if (!comment) {
+      return res.status(400).json({ message: 'Comment content is required' });
+    }
+
+    const updatedComment = await Comment.findByIdAndUpdate(
+      commentId,
+      { comment },
+      { new: true },
+    );
+
+    if (!updatedComment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Comment updated successfully',
+      comment: updatedComment,
+    });
+  } catch (error) {
+    console.error('Error updating comment:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
