@@ -66,7 +66,7 @@ const userSchema = new Schema<IUser>(
     },
     profileImage: {
       type: String,
-      default: 'https://example.com/default-profile-image.png',
+      default: 'https://avatar.iran.liara.run/public/boy',
     },
     isVerified: {
       type: Boolean,
