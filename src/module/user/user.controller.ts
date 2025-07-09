@@ -63,7 +63,7 @@ export const getUserProfile = async (
         name: user.name,
         email: user.email,
         username: user.username,
-        profieImage: user.profileImage,
+        profileImage: user.profileImage,
         bio: user.bio,
         skills: user.skills,
         location: user.location,

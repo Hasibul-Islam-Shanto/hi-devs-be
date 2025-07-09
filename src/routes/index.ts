@@ -1,3 +1,4 @@
+import { blogRouter } from '@/module/blog/blog.route';
 import commentsRouter from '@/module/comments/comments.route';
 import { questionRouter } from '@/module/question/question.route';
 import express from 'express';
@@ -27,6 +28,10 @@ const routes: RouterConfig[] = [
   {
     path: '/comments',
     router: commentsRouter,
+  },
+  {
+    path: '/blogs',
+    router: blogRouter,
   },
 ];
 
