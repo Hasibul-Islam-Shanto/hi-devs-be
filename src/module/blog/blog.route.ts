@@ -5,6 +5,7 @@ import {
   deleteBlogPost,
   getBlogPostById,
   getBlogPosts,
+  likeBlogPost,
   updateBlogPost,
 } from './blog.controller';
 
@@ -27,4 +28,9 @@ blogRouter
     '/:id',
     authMiddleware as RequestHandler,
     deleteBlogPost as RequestHandler,
+  )
+  .post(
+    '/likes/:id',
+    authMiddleware as RequestHandler,
+    likeBlogPost as RequestHandler,
   );

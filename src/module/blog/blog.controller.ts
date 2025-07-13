@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Blog from './blog.model';
 
 export const createBlogPost = async (
@@ -162,6 +163,43 @@ export const deleteBlogPost = async (
     });
   } catch (error) {
     console.error('Error deleting blog post:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const likeBlogPost = async (
+  req: Request,
+  res: Response,
+): Promise<Response | void> => {
+  try {
+    const blogId = req.params.id;
+    const userId = req?.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized access' });
+    }
+
+    const blog = await Blog.findById(blogId);
+
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog post not found' });
+    }
+
+    if (blog.likes.includes(new mongoose.Types.ObjectId(userId))) {
+      blog.likes = blog.likes.filter((id) => id.toString() !== userId);
+    } else {
+      blog.likes.push(new mongoose.Types.ObjectId(userId));
+    }
+
+    await blog.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Blog post liked successfully',
+      likes: blog.likes,
+    });
+  } catch (error) {
+    console.error('Error liking blog post:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
