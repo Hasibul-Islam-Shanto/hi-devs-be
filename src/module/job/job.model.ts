@@ -31,7 +31,7 @@ const jobSchema: Schema = new Schema(
     },
     salaryRange: { type: String, required: true },
     requiredSkills: { type: [String], required: true },
-    postedBy: { type: mongoose.Types.ObjectId, ref: 'User', required: true },
+    postedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     status: {
       type: String,
       enum: ['Open', 'Closed'],

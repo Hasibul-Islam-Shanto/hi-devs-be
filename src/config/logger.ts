@@ -1,9 +1,23 @@
 import winston from 'winston';
 
-// const logFilePath = process.cwd() + '/logs';
+const enumerateErrorFormat = winston.format((info) => {
+  if (info instanceof Error) {
+    Object.assign(info, { message: info.stack });
+  }
+  return info;
+});
 
-export const winstonLogger = winston.createLogger({
-  level: 'info',
-  format: winston.format.json(),
+const logger = winston.createLogger({
+  level: 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    enumerateErrorFormat(),
+    winston.format.colorize(),
+    winston.format.printf(({ level, message, timestamp }) => {
+      return `[${timestamp}] ${level}: ${message}`;
+    }),
+  ),
   transports: [new winston.transports.Console()],
 });
+
+export default logger;
