@@ -2,8 +2,8 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export interface IApplication extends Document {
   jobId: mongoose.Types.ObjectId;
-  applicatId: mongoose.Types.ObjectId;
-  converLetter: string;
+  applicantId: mongoose.Types.ObjectId;
+  coverLetter: string;
   portfolioUrl: string;
   resumeUrl: string;
   status: 'pending' | 'accepted' | 'rejected';
@@ -18,12 +18,12 @@ const applicationSchema = new Schema<IApplication>(
       ref: 'Job',
       required: true,
     },
-    applicatId: {
+    applicantId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    converLetter: {
+    coverLetter: {
       type: String,
       required: true,
       trim: true,

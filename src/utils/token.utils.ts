@@ -14,7 +14,7 @@ export const generateAccessToken = (user: IUser): string => {
   };
 
   return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
-    expiresIn: 60,
+    expiresIn: 60 * 60, // 1 hour
   });
 };
 

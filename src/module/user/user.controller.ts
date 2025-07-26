@@ -8,7 +8,6 @@ export const userSignup = async (
   res: Response,
 ): Promise<Response | void> => {
   try {
-    console.log('Received signup request:', req.body);
     const { name, email, username, password } = req.body;
 
     if (!name || !email || !username || !password) {

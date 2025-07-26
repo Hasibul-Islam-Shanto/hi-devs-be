@@ -1,3 +1,4 @@
+import applicationRouter from '@/module/applications/application.route';
 import { blogRouter } from '@/module/blog/blog.route';
 import commentsRouter from '@/module/comments/comments.route';
 import jobRouter from '@/module/job/job.route';
@@ -37,6 +38,10 @@ const routes: RouterConfig[] = [
   {
     path: '/jobs',
     router: jobRouter,
+  },
+  {
+    path: '/applications',
+    router: applicationRouter,
   },
 ];
 
