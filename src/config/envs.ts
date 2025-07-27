@@ -1,17 +1,42 @@
+import path from 'path';
 import dotenv from 'dotenv';
+import { z } from 'zod';
 
-dotenv.config();
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-export const PORT = process.env.PORT || 8080;
-export const MONGO_URI =
-  process.env.MONGO_URI || 'mongodb://localhost:27017/mydatabase';
+const envVarSchema = z.object({
+  NODE_ENV: z
+    .enum(['production', 'development', 'staging', 'test'])
+    .default('production'),
+  PORT: z.coerce.number().default(8080),
+  MONGO_URI: z.string().default('mongodb://localhost:27017/mydatabase'),
+  JWT_SECRET: z
+    .string()
+    .default('default-secret-key')
+    .describe('JWT secret key'),
+  ACCESS_TOKEN_EXPIRES_IN: z.coerce
+    .number()
+    .default(30)
+    .describe('Access token expiration time in minutes'),
+  REFRESH_TOKEN_EXPIRES_IN: z.coerce
+    .number()
+    .default(30)
+    .describe('Refresh token expiration time in minutes'),
+});
 
-// JWT Configuration
-export const ACCESS_TOKEN_SECRET =
-  process.env.ACCESS_TOKEN_SECRET ||
-  'access-token-secret-key-change-in-production';
-export const REFRESH_TOKEN_SECRET =
-  process.env.REFRESH_TOKEN_SECRET ||
-  'refresh-token-secret-key-change-in-production';
-export const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN;
-export const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN;
+const envVars = envVarSchema.safeParse(process.env);
+if (!envVars.success) {
+  console.error('Invalid environment variables:', envVars.error.message);
+  process.exit(1);
+}
+
+export default {
+  env: envVars.data.NODE_ENV,
+  port: envVars.data.PORT,
+  mongoUrl: envVars.data.MONGO_URI,
+  jwt: {
+    secret: envVars.data.JWT_SECRET,
+    accessTokenExpiresIn: envVars.data.ACCESS_TOKEN_EXPIRES_IN,
+    refreshTokenExpiresIn: envVars.data.REFRESH_TOKEN_EXPIRES_IN,
+  },
+};

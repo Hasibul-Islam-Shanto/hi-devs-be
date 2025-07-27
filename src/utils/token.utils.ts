@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from '../config/envs';
+import envs from '../config/envs';
 import { IUser } from '../module/user/user.model';
 
 interface TokenPayload {
@@ -13,8 +13,8 @@ export const generateAccessToken = (user: IUser): string => {
     username: user.username,
   };
 
-  return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
-    expiresIn: 60 * 60, // 1 hour
+  return jwt.sign(payload, envs.jwt.secret, {
+    expiresIn: `${envs.jwt.accessTokenExpiresIn}m`,
   });
 };
 
@@ -24,14 +24,14 @@ export const generateRefreshToken = (user: IUser): string => {
     username: user.username,
   };
 
-  return jwt.sign(payload, REFRESH_TOKEN_SECRET as jwt.Secret, {
-    expiresIn: '7d',
+  return jwt.sign(payload, envs.jwt.secret, {
+    expiresIn: `${envs.jwt.refreshTokenExpiresIn}d`,
   });
 };
 
 export const verifyAccessToken = (token: string): TokenPayload => {
   try {
-    return jwt.verify(token, ACCESS_TOKEN_SECRET as jwt.Secret) as TokenPayload;
+    return jwt.verify(token, envs.jwt.secret) as TokenPayload;
   } catch (error) {
     throw new Error('Invalid or expired access token');
   }
@@ -39,10 +39,7 @@ export const verifyAccessToken = (token: string): TokenPayload => {
 
 export const verifyRefreshToken = (token: string): TokenPayload => {
   try {
-    return jwt.verify(
-      token,
-      REFRESH_TOKEN_SECRET as jwt.Secret,
-    ) as TokenPayload;
+    return jwt.verify(token, envs.jwt.secret) as TokenPayload;
   } catch (error) {
     throw new Error('Invalid or expired refresh token');
   }

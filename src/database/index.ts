@@ -1,8 +1,8 @@
-import { MONGO_URI } from '@/config';
 import mongoose from 'mongoose';
+import envs from '../config/envs';
 
 const connectDB = async () => {
-  await mongoose.connect(MONGO_URI as string);
+  await mongoose.connect(envs.mongoUrl);
 };
 
 export default connectDB;
