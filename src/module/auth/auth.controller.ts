@@ -1,7 +1,6 @@
 import catchAsync from '@/utils/catch-async';
 import { zParse } from '@/utils/z-parse';
 import bcrypt from 'bcryptjs';
-import { RequestHandler } from 'express';
 import {
   generateAccessToken,
   generateRefreshToken,
