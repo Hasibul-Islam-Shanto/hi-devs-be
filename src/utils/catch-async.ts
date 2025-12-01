@@ -10,8 +10,15 @@ const catchAsync = (handler: ControllerFunction) => {
   return async (req: Request, res: Response) => {
     try {
       await handler(req, res);
-    } catch (error) {
-      res.status(500).json({ message: 'Internal server error' });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const statusCode = error.statusCode || error.status || 500;
+      const message = error.message || 'Internal server error';
+
+      res.status(statusCode).json({
+        success: false,
+        message: message,
+      });
     }
   };
 };

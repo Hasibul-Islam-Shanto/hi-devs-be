@@ -12,30 +12,10 @@ import {
 export const questionRouter = express.Router();
 
 questionRouter
-  .post(
-    '/',
-    authMiddleware as RequestHandler,
-    postNewQuestion as RequestHandler,
-  )
-  .get('/', getAllQuestions as RequestHandler)
-  .get(
-    '/:id',
-    authMiddleware as RequestHandler,
-    getQuestionById as RequestHandler,
-  )
-  .patch(
-    '/:id',
-    authMiddleware as RequestHandler,
-    updateQuestion as RequestHandler,
-  )
-  .delete(
-    '/:id',
-    authMiddleware as RequestHandler,
-    deleteQuestion as RequestHandler,
-  );
+  .post('/', authMiddleware, postNewQuestion)
+  .get('/', getAllQuestions)
+  .get('/:id', authMiddleware, getQuestionById)
+  .patch('/:id', authMiddleware, updateQuestion)
+  .delete('/:id', authMiddleware, deleteQuestion);
 
-questionRouter.post(
-  '/likes/:id',
-  authMiddleware as RequestHandler,
-  likeQuestion as RequestHandler,
-);
+questionRouter.post('/likes/:id', authMiddleware, likeQuestion);

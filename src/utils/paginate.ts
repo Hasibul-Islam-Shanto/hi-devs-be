@@ -6,6 +6,7 @@ interface PaginationOptions {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   select?: string;
+  populate?: { path: string; select?: string };
 }
 
 interface PaginationResult<T> {
@@ -30,6 +31,7 @@ export async function paginate<T extends Document>(
     limit,
     sortBy = 'createdAt',
     sortOrder = 'desc',
+    populate,
     select = '',
   } = options;
 
@@ -38,8 +40,25 @@ export async function paginate<T extends Document>(
   const sortObject: Record<string, 1 | -1> = {};
   sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = model.find(filter).sort(sortObject).skip(skip).limit(limit);
+
+  if (select) {
+    query = query.select(select);
+  }
+
+  if (populate) {
+    if (Array.isArray(populate)) {
+      populate.forEach((pop) => {
+        query = query.populate(pop);
+      });
+    } else {
+      query = query.populate(populate);
+    }
+  }
+
   const [data, totalItems] = await Promise.all([
-    model.find(filter).select(select).sort(sortObject).skip(skip).limit(limit),
+    query.exec(),
     model.countDocuments(filter),
   ]);
 
