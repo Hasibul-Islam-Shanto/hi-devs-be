@@ -2,7 +2,7 @@ import { authMiddleware } from '@/middlewares/auth.middleware';
 import express, { RequestHandler } from 'express';
 import {
   deleteComment,
-  getCommentsByQuestionId,
+  getAllComments,
   likeComment,
   postNewComment,
   updateComment,
@@ -11,27 +11,10 @@ import {
 const commentsRouter = express.Router();
 
 commentsRouter
-  .post('/', authMiddleware as RequestHandler, postNewComment as RequestHandler)
-  .get(
-    '/:questionId',
-    authMiddleware as RequestHandler,
-    getCommentsByQuestionId as RequestHandler,
-  )
-  .delete(
-    '/:commentId',
-    authMiddleware as RequestHandler,
-    deleteComment as RequestHandler,
-  )
-  .patch(
-    '/:commentId',
-    authMiddleware as RequestHandler,
-    updateComment as RequestHandler,
-  );
-
-commentsRouter.post(
-  '/:commentId/like',
-  authMiddleware as RequestHandler,
-  likeComment as RequestHandler,
-);
+  .post('/', authMiddleware, postNewComment)
+  .get('/:type/:id', getAllComments)
+  .delete('/:commentId', authMiddleware, deleteComment)
+  .patch('/:commentId', authMiddleware, updateComment)
+  .post('/:commentId/like', authMiddleware, likeComment);
 
 export default commentsRouter;

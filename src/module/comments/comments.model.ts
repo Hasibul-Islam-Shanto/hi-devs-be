@@ -2,9 +2,11 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IComment extends Document {
   userId: mongoose.Types.ObjectId;
-  questionId: mongoose.Types.ObjectId;
+  commentableType: 'Question' | 'Blog' | 'Job';
+  commentableId: mongoose.Types.ObjectId;
   comment: string;
   likes: mongoose.Types.ObjectId[];
+  parentComment?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,15 +18,21 @@ const commentSchema: Schema<IComment> = new Schema(
       required: true,
       ref: 'User',
     },
-    questionId: {
+    commentableType: {
+      type: String,
+      required: true,
+      enum: ['Question', 'Blog', 'Job'],
+    },
+    commentableId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'Question',
+      refPath: 'commentableType',
     },
     comment: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 1000,
     },
     likes: [
       {
@@ -32,6 +40,11 @@ const commentSchema: Schema<IComment> = new Schema(
         ref: 'User',
       },
     ],
+    parentComment: {
+      type: Schema.Types.ObjectId,
+      ref: 'Comment',
+      default: null,
+    },
   },
   {
     timestamps: true,
