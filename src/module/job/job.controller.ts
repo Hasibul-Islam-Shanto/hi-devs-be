@@ -13,10 +13,6 @@ export const postJob = catchAsync(async (req, res) => {
   const { body } = await zParse(jobSchema, req);
   const userId = req.user?.userId;
 
-  if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized access' });
-  }
-
   const newJob = new Job({
     ...body,
     postedBy: userId,
@@ -82,10 +78,6 @@ export const updateJob = catchAsync(async (req, res) => {
 
   const userId = req.user?.userId;
 
-  if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized access' });
-  }
-
   const job = await Job.findById(params.jobId);
 
   if (!job) {
@@ -100,13 +92,9 @@ export const updateJob = catchAsync(async (req, res) => {
 
   const updatedJob = await Job.findByIdAndUpdate(
     params.jobId,
-    { ...body, updatedAt: new Date() },
+    { ...body },
     { new: true },
   ).populate('postedBy', 'name email profileImage');
-
-  if (!updatedJob) {
-    return res.status(404).json({ message: 'Job not found' });
-  }
 
   return res.status(200).json({
     success: true,
