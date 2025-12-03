@@ -1,112 +1,104 @@
+import catchAsync from '@/utils/catch-async';
+import { paginate } from '@/utils/paginate';
 import { zParse } from '@/utils/z-parse';
-import { Request, Response } from 'express';
 import Job from './job.model';
-import { jobSchema, updateJobSchema } from './job.validation';
+import {
+  getAllJobsSchema,
+  jobIdSchema,
+  jobSchema,
+  updateJobSchema,
+} from './job.validation';
 
-export const postJob = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const jobData = await zParse(jobSchema, req);
-    const userId = req.user?.userId;
+export const postJob = catchAsync(async (req, res) => {
+  const { body } = await zParse(jobSchema, req);
+  const userId = req.user?.userId;
 
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
+  const newJob = new Job({
+    ...body,
+    postedBy: userId,
+  });
 
-    const newJob = await Job.create({
-      ...jobData,
-      postedBy: userId,
-    });
+  await newJob.save();
 
-    return res.status(201).json({
-      success: true,
-      message: 'Job posted successfully',
-      job: newJob,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      message: 'Failed to post job',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+  return res.status(201).json({
+    success: true,
+    message: 'Job posted successfully',
+    job: newJob,
+  });
+});
+
+export const getAllJobs = catchAsync(async (req, res) => {
+  const { query } = await zParse(getAllJobsSchema, req);
+  const page = parseInt(query.page) || 1;
+  const limit = parseInt(query.limit) || 10;
+
+  const searchFilter: Record<string, unknown> = {};
+  if (query.search) {
+    searchFilter.$or = [
+      { title: { $regex: query.search, $options: 'i' } },
+      { location: { $regex: query.search, $options: 'i' } },
+      { salaryRange: { $regex: query.search, $options: 'i' } },
+    ];
   }
-};
+  const result = await paginate(Job, searchFilter, {
+    page,
+    limit,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
+    populate: { path: 'postedBy', select: 'name profileImage' },
+  });
 
-export const getAllJobs = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const jobs = await Job.find().populate(
-      'postedBy',
-      'name email profileImage',
-    );
-    return res.status(200).json({
-      success: true,
-      jobs,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Failed to retrieve jobs',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+  return res.status(200).json({
+    success: true,
+    jobs: result.data,
+    pagination: result.pagination,
+  });
+});
+
+export const getJobById = catchAsync(async (req, res) => {
+  const { params } = await zParse(jobIdSchema, req);
+  const jobId = params.jobId;
+  const job = await Job.findById(jobId).populate(
+    'postedBy',
+    'name username profileImage',
+  );
+
+  if (!job) {
+    return res.status(404).json({ message: 'Job not found' });
   }
-};
 
-export const getJobById = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const jobId = req.params.id;
-    const job = await Job.findById(jobId).populate(
-      'postedBy',
-      'name email profileImage',
-    );
+  return res.status(200).json({
+    success: true,
+    job,
+  });
+});
 
-    if (!job) {
-      return res.status(404).json({ message: 'Job not found' });
-    }
+export const updateJob = catchAsync(async (req, res) => {
+  const { body, params } = await zParse(updateJobSchema, req);
 
-    return res.status(200).json({
-      success: true,
-      job,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Failed to retrieve job',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+  const userId = req.user?.userId;
+
+  const job = await Job.findById(params.jobId);
+
+  if (!job) {
+    return res.status(404).json({ message: 'Job not found' });
   }
-};
 
-export const updateJob = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const jobId = req.params.id;
-    const jobData = await zParse(updateJobSchema, req);
-    const updatedJob = await Job.findByIdAndUpdate(
-      jobId,
-      { ...jobData, updatedAt: new Date() },
-      { new: true },
-    ).populate('postedBy', 'name email profileImage');
-
-    if (!updatedJob) {
-      return res.status(404).json({ message: 'Job not found' });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Job updated successfully',
-      job: updatedJob,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      message: 'Failed to update job',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+  if (job.postedBy.toString() !== userId) {
+    return res
+      .status(403)
+      .json({ message: 'Forbidden: You cannot update this job' });
   }
-};
+
+  const updatedJob = await Job.findByIdAndUpdate(
+    params.jobId,
+    { ...body },
+    { new: true },
+  ).populate('postedBy', 'name email profileImage');
+
+  return res.status(200).json({
+    success: true,
+    message: 'Job updated successfully',
+    job: updatedJob,
+  });
+});
