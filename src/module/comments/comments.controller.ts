@@ -1,183 +1,151 @@
+import catchAsync from '@/utils/catch-async';
+import { paginate } from '@/utils/paginate';
+import { zParse } from '@/utils/z-parse';
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Comment from './comments.model';
+import {
+  addCommentSchema,
+  commentIdParamSchema,
+  getAllCommentsSchema,
+  updateCommentSchema,
+} from './comments.validation';
 
-export const postNewComment = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const { questionId, comment } = req.body;
-    const userId = req.user?.userId;
+export const postNewComment = catchAsync(async (req, res) => {
+  const { body, query } = await zParse(addCommentSchema, req);
+  const userId = req.user?.userId;
 
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
-
-    if (!questionId || !comment) {
-      return res.status(400).json({
-        message: 'Question ID and comment are required',
-      });
-    }
-
-    const newComment = new Comment({
-      userId,
-      questionId,
-      comment,
-    });
-
-    await newComment.save();
-
-    return res.status(201).json({
-      success: true,
-      message: 'Comment posted successfully',
-      comment: newComment,
-    });
-  } catch (error) {
-    console.error('Error posting comment:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized access' });
   }
-};
 
-export const getCommentsByQuestionId = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const { questionId } = req.params;
+  const newComment = new Comment({
+    userId,
+    commentableType: query.commentableType,
+    commentableId: query.commentableId,
+    comment: body.comment,
+  });
 
-    if (!questionId) {
-      return res.status(400).json({ message: 'Question ID is required' });
-    }
+  await newComment.save();
 
-    const comments = await Comment.find({ questionId })
-      .populate('userId', 'name username')
-      .sort({ createdAt: -1 });
+  return res.status(201).json({
+    success: true,
+    message: 'Comment added successfully',
+    comment: newComment,
+  });
+});
 
-    if (!comments || comments.length === 0) {
-      return res
-        .status(404)
-        .json({ message: 'No comments found for this question' });
-    }
+export const getAllComments = catchAsync(async (req, res) => {
+  const { params, query } = await zParse(getAllCommentsSchema, req);
+  const page = parseInt(query.page) || 1;
+  const limit = parseInt(query.limit) || 10;
+  const filter = {
+    commentableType: params.type,
+    commentableId: params.id,
+    parentCommentId: null,
+  };
 
-    return res.status(200).json({
-      success: true,
-      comments,
-    });
-  } catch (error) {
-    console.error('Error fetching comments:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+  const results = await paginate(Comment, filter, {
+    page,
+    limit,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    populate: { path: 'userId', select: 'name username' },
+  });
+
+  return res.status(200).json({
+    success: true,
+    data: results.data,
+    pagination: results.pagination,
+  });
+});
+
+export const likeComment = catchAsync(async (req, res) => {
+  const { params } = await zParse(commentIdParamSchema, req);
+  const { commentId } = params;
+  const userId = req.user?.userId;
+  const convertedUserId = new mongoose.Types.ObjectId(userId);
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized access' });
   }
-};
 
-export const likeComment = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const { commentId } = req.params;
-    const userId = req.user?.userId;
-    const convertedUserId = new mongoose.Types.ObjectId(userId);
+  const comment = await Comment.findById(commentId);
 
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
-
-    const comment = await Comment.findById(commentId);
-
-    if (!comment) {
-      return res.status(404).json({ message: 'Comment not found' });
-    }
-
-    if (comment.likes.includes(convertedUserId)) {
-      comment.likes = comment.likes.filter(
-        (like) => !like.equals(convertedUserId),
-      );
-    } else {
-      comment.likes.push(convertedUserId);
-    }
-
-    await comment.save();
-
-    return res.status(200).json({
-      success: true,
-      message: 'Comment like status updated',
-      likesCount: comment.likes.length,
-    });
-  } catch (error) {
-    console.error('Error liking comment:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+  if (!comment) {
+    return res.status(404).json({ message: 'Comment not found' });
   }
-};
 
-export const deleteComment = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const { commentId } = req.params;
-    const userId = req.user?.userId;
-
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
-
-    const comment = await Comment.findById(commentId);
-
-    if (!comment) {
-      return res.status(404).json({ message: 'Comment not found' });
-    }
-
-    if (comment.userId.toString() !== userId) {
-      return res.status(403).json({ message: 'Forbidden: Not your comment' });
-    }
-
-    await Comment.findByIdAndDelete(commentId);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Comment deleted successfully',
-    });
-  } catch (error) {
-    console.error('Error deleting comment:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-export const updateComment = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const { commentId } = req.params;
-    const { comment } = req.body;
-    const userId = req.user?.userId;
-
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
-
-    if (!comment) {
-      return res.status(400).json({ message: 'Comment content is required' });
-    }
-
-    const updatedComment = await Comment.findByIdAndUpdate(
-      commentId,
-      { comment },
-      { new: true },
+  if (comment.likes.includes(convertedUserId)) {
+    comment.likes = comment.likes.filter(
+      (like) => !like.equals(convertedUserId),
     );
-
-    if (!updatedComment) {
-      return res.status(404).json({ message: 'Comment not found' });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Comment updated successfully',
-      comment: updatedComment,
-    });
-  } catch (error) {
-    console.error('Error updating comment:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+  } else {
+    comment.likes.push(convertedUserId);
   }
-};
+
+  await comment.save();
+
+  return res.status(200).json({
+    success: true,
+    message: 'Comment like status updated',
+    likesCount: comment.likes.length,
+  });
+});
+
+export const deleteComment = catchAsync(async (req, res) => {
+  const { params } = await zParse(commentIdParamSchema, req);
+  const userId = req.user?.userId;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized access' });
+  }
+
+  const comment = await Comment.findById(params.commentId);
+
+  if (!comment) {
+    return res.status(404).json({ message: 'Comment not found' });
+  }
+
+  if (comment.userId.toString() !== userId) {
+    return res.status(403).json({ message: 'Forbidden: Not your comment' });
+  }
+
+  await Comment.findByIdAndDelete(params.commentId);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Comment deleted successfully',
+  });
+});
+
+export const updateComment = catchAsync(async (req, res) => {
+  const { params, body } = await zParse(updateCommentSchema, req);
+  const { commentId } = params;
+  const { comment } = body;
+  const userId = req.user?.userId;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized access' });
+  }
+
+  if (!comment) {
+    return res.status(400).json({ message: 'Comment content is required' });
+  }
+
+  const updatedComment = await Comment.findByIdAndUpdate(
+    commentId,
+    { comment },
+    { new: true },
+  );
+
+  if (!updatedComment) {
+    return res.status(404).json({ message: 'Comment not found' });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: 'Comment updated successfully',
+    comment: updatedComment,
+  });
+});
