@@ -42,7 +42,7 @@ export const getAllComments = catchAsync(async (req, res) => {
   const filter = {
     commentableType: params.type,
     commentableId: params.id,
-    parentCommentId: null,
+    parentComment: null,
   };
 
   const results = await paginate(Comment, filter, {
@@ -64,11 +64,12 @@ export const likeComment = catchAsync(async (req, res) => {
   const { params } = await zParse(commentIdParamSchema, req);
   const { commentId } = params;
   const userId = req.user?.userId;
-  const convertedUserId = new mongoose.Types.ObjectId(userId);
 
   if (!userId) {
     return res.status(401).json({ message: 'Unauthorized access' });
   }
+
+  const convertedUserId = new mongoose.Types.ObjectId(userId);
 
   const comment = await Comment.findById(commentId);
 
@@ -129,8 +130,16 @@ export const updateComment = catchAsync(async (req, res) => {
     return res.status(401).json({ message: 'Unauthorized access' });
   }
 
-  if (!comment) {
-    return res.status(400).json({ message: 'Comment content is required' });
+  const existingComment = await Comment.findById(commentId);
+
+  if (!existingComment) {
+    return res.status(404).json({ message: 'Comment not found' });
+  }
+
+  if (existingComment.userId.toString() !== userId) {
+    return res
+      .status(403)
+      .json({ message: 'Forbidden: You can only update your own comments' });
   }
 
   const updatedComment = await Comment.findByIdAndUpdate(
