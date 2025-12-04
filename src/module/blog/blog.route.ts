@@ -12,25 +12,9 @@ import {
 export const blogRouter = express.Router();
 
 blogRouter
-  .get('/', getBlogPosts as RequestHandler)
-  .post('/', authMiddleware as RequestHandler, createBlogPost as RequestHandler)
-  .get(
-    '/:id',
-    authMiddleware as RequestHandler,
-    getBlogPostById as RequestHandler,
-  )
-  .patch(
-    '/:id',
-    authMiddleware as RequestHandler,
-    updateBlogPost as RequestHandler,
-  )
-  .delete(
-    '/:id',
-    authMiddleware as RequestHandler,
-    deleteBlogPost as RequestHandler,
-  )
-  .post(
-    '/likes/:id',
-    authMiddleware as RequestHandler,
-    likeBlogPost as RequestHandler,
-  );
+  .get('/', getBlogPosts)
+  .post('/', authMiddleware, createBlogPost)
+  .get('/:blogId', authMiddleware, getBlogPostById)
+  .patch('/:blogId', authMiddleware, updateBlogPost)
+  .delete('/:blogId', authMiddleware, deleteBlogPost)
+  .post('/likes/:blogId', authMiddleware, likeBlogPost);
