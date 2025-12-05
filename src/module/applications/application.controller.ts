@@ -1,176 +1,111 @@
+import catchAsync from '@/utils/catch-async';
+import { paginate } from '@/utils/paginate';
 import { zParse } from '@/utils/z-parse';
-import { Request, Response } from 'express';
 import Job from '../job/job.model';
 import Application from './application.model';
 import {
+  applicationIdParamSchema,
+  getAllApplicationsSchema,
+  jobCreatorApplicationUpdate,
   postApplicationSchema,
-  updateApplicationSchema,
 } from './application.validation';
 
-export const postApplication = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const applicationData = await zParse(postApplicationSchema, req);
-    const userId = req?.user?.userId;
-    const job = await Job.findById(applicationData?.jobId);
+export const postApplication = catchAsync(async (req, res) => {
+  const { body } = await zParse(postApplicationSchema, req);
+  const userId = req?.user?.userId;
+  const job = await Job.findById(body?.jobId);
 
-    if (!job || job?.status !== 'Open') {
-      return res.status(404).json({ message: 'Job not found or not open' });
-    }
-
-    if (job?.postedBy.toString() === userId) {
-      return res
-        .status(403)
-        .json({ message: 'You cannot apply for your own job' });
-    }
-
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
-
-    const newApplication = new Application({
-      ...applicationData,
-      applicantId: userId,
-    });
-
-    const savedApplication = await newApplication.save();
-
-    return res.status(201).json({
-      message: 'Application submitted successfully',
-      application: savedApplication,
-    });
-  } catch (error) {
-    console.error('Error submitting application:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+  if (!job) {
+    return res.status(404).json({ message: 'Job not found' });
   }
-};
 
-export const getApplicationsByJobId = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const userId = req?.user?.userId;
-    const jobId = req.params.jobId;
-
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
-
-    const applications = await Application.find({ jobId })
-      .populate('jobId', 'title company')
-      .populate('applicantId', 'name email');
-
-    return res.status(200).json({
-      message: 'Applications retrieved successfully',
-      applications,
-    });
-  } catch (error) {
-    console.error('Error retrieving applications:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+  if (job?.status !== 'Open') {
+    return res.status(400).json({ message: 'Cannot apply to a closed job' });
   }
-};
 
-export const getApplicationsByApplicantId = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const userId = req?.user?.userId;
-    const applicantId = req.params.applicantId;
-
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
-
-    const applications = await Application.find({ applicantId })
-      .populate('jobId', 'title company')
-      .populate('applicantId', 'name email');
-
-    return res.status(200).json({
-      message: 'Applications retrieved successfully',
-      applications,
-    });
-  } catch (error) {
-    console.error('Error retrieving applications:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+  if (job?.postedBy.toString() === userId) {
+    return res
+      .status(403)
+      .json({ message: 'You cannot apply for your own job' });
   }
-};
 
-export const getApplicationById = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const userId = req?.user?.userId;
-    const id = req.params.id;
+  const newApplication = new Application({
+    ...body,
+    applicantId: userId,
+  });
 
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
+  const savedApplication = await newApplication.save();
 
-    const application = await Application.findById({ _id: id })
-      .populate('jobId', 'title company')
-      .populate('applicantId', 'name email');
+  return res.status(201).json({
+    message: 'Application submitted successfully',
+    application: savedApplication,
+  });
+});
 
-    if (!application) {
-      return res.status(404).json({ message: 'Application not found' });
-    }
+export const getApplicationsByJobId = catchAsync(async (req, res) => {
+  const { query } = await zParse(getAllApplicationsSchema, req);
 
-    return res.status(200).json({
-      message: 'Application retrieved successfully',
-      application,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+  const page = parseInt(query.page) || 1;
+  const limit = parseInt(query.limit) || 10;
+
+  const searchFilter: Record<string, unknown> = {};
+  if (query.search) {
+    searchFilter.$or = [{ status: { $regex: query.search, $options: 'i' } }];
   }
-};
 
-export const updateApplication = async (
-  req: Request,
-  res: Response,
-): Promise<Response | void> => {
-  try {
-    const userId = req?.user?.userId;
-    const id = req.params.id;
-    const applicationData = await zParse(updateApplicationSchema, req);
+  const result = await paginate(Application, searchFilter, {
+    page,
+    limit,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
+    populate: { path: 'applicantId', select: 'name email username' },
+  });
 
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized access' });
-    }
-    const existingApplication = await Application.findById({
-      _id: id,
-    });
+  return res.status(200).json({
+    message: 'Applications retrieved successfully',
+    applications: result.data,
+    pagination: result.pagination,
+  });
+});
 
-    if (!existingApplication) {
-      return res.status(404).json({ message: 'Application not found' });
-    }
-    const job = await Job.findById({ _id: existingApplication?.jobId });
+export const getApplicationById = catchAsync(async (req, res) => {
+  const { params } = await zParse(applicationIdParamSchema, req);
 
-    if (!job || job?.postedBy.toString() !== userId) {
-      return res
-        .status(404)
-        .json({ message: 'You cannot update this application' });
-    }
-    const updatedApplication = await Application.findByIdAndUpdate(
-      { _id: id },
-      { ...applicationData },
-      { new: true, runValidators: true },
-    )
-      .populate('jobId', 'title company')
-      .populate('applicantId', 'name email');
+  const application = await Application.findById({ _id: params.applicationId })
+    .populate('jobId', 'title company')
+    .populate('applicantId', 'name email');
 
-    if (!updatedApplication) {
-      return res.status(404).json({ message: 'Application not found' });
-    }
-
-    return res.status(200).json({
-      message: 'Application updated successfully',
-      application: updatedApplication,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+  if (!application) {
+    return res.status(404).json({ message: 'Application not found' });
   }
-};
+
+  return res.status(200).json({
+    message: 'Application retrieved successfully',
+    application,
+  });
+});
+
+export const updatedApplicationByJobCreator = catchAsync(async (req, res) => {
+  const { body, params } = await zParse(jobCreatorApplicationUpdate, req);
+  const application = await Application.findById({ _id: params.applicationId });
+  const userId = req?.user?.userId;
+
+  if (!application) {
+    return res.status(404).json({ message: 'Application not found' });
+  }
+
+  const job = await Job.findById(application.jobId);
+  if (job?.postedBy.toString() !== userId) {
+    return res
+      .status(403)
+      .json({ message: 'You are not authorized to update this application' });
+  }
+
+  application.status = body.status;
+  const updatedApplication = await application.save();
+
+  return res.status(200).json({
+    message: 'Application updated successfully',
+    application: updatedApplication,
+  });
+});
