@@ -31,10 +31,11 @@ const applicationSchema = new Schema<IApplication>(
     portfolioUrl: {
       type: String,
       required: false,
+      trim: true,
     },
     resumeUrl: {
       type: String,
-      required: false,
+      required: true,
       trim: true,
     },
     status: {
