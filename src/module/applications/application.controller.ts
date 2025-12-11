@@ -28,6 +28,16 @@ export const postApplication = catchAsync(async (req, res) => {
       .status(403)
       .json({ message: 'You cannot apply for your own job' });
   }
+  const existingApplication = await Application.findOne({
+    jobId: body.jobId,
+    applicantId: userId,
+  });
+
+  if (existingApplication) {
+    return res
+      .status(400)
+      .json({ message: 'You have already applied for this job' });
+  }
 
   const newApplication = new Application({
     ...body,
@@ -43,12 +53,15 @@ export const postApplication = catchAsync(async (req, res) => {
 });
 
 export const getApplicationsByJobId = catchAsync(async (req, res) => {
-  const { query } = await zParse(getAllApplicationsSchema, req);
+  const { query, params } = await zParse(getAllApplicationsSchema, req);
 
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 10;
 
-  const searchFilter: Record<string, unknown> = {};
+  const searchFilter: Record<string, unknown> = {
+    jobId: params.jobId,
+  };
+
   if (query.search) {
     searchFilter.$or = [{ status: { $regex: query.search, $options: 'i' } }];
   }
@@ -76,7 +89,13 @@ export const getApplicationById = catchAsync(async (req, res) => {
     .populate('applicantId', 'name email');
 
   if (!application) {
-    return res.status(404).json({ message: 'Application not found' });
+    return res.status(400).json({ message: 'Application not found' });
+  }
+
+  if (application.applicantId._id.toString() !== req?.user?.userId) {
+    return res
+      .status(403)
+      .json({ message: 'You are not authorized to view this application' });
   }
 
   return res.status(200).json({
@@ -95,6 +114,11 @@ export const updatedApplicationByJobCreator = catchAsync(async (req, res) => {
   }
 
   const job = await Job.findById(application.jobId);
+
+  if (!job) {
+    return res.status(404).json({ message: 'Associated job not found' });
+  }
+
   if (job?.postedBy.toString() !== userId) {
     return res
       .status(403)

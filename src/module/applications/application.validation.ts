@@ -9,6 +9,9 @@ export const applicationIdParamSchema = z.object({
 });
 
 export const getAllApplicationsSchema = z.object({
+  params: z.object({
+    jobId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid job ID'),
+  }),
   query: z.object({
     page: z.string().optional().default('1'),
     limit: z.string().optional().default('10'),
@@ -33,7 +36,7 @@ export const postApplicationSchema = z.object({
 
 export const applicantApplicationUpdate = z.object({
   body: z.object({
-    converLetter: z.string().optional(),
+    coverLetter: z.string().optional(),
     portfolioUrl: z
       .string()
       .url('Portfolio URL must be a valid URL')
