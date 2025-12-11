@@ -1,40 +1,18 @@
 import { authMiddleware } from '@/middlewares/auth.middleware';
-import express, { RequestHandler } from 'express';
+import express from 'express';
 import {
   getApplicationById,
-  getApplicationsByApplicantId,
   getApplicationsByJobId,
   postApplication,
-  updateApplication,
+  updatedApplicationByJobCreator,
 } from './application.controller';
 
 const applicationRouter = express.Router();
 
 applicationRouter
-  .post(
-    '/',
-    authMiddleware as RequestHandler,
-    postApplication as RequestHandler,
-  )
-  .get(
-    '/:id',
-    authMiddleware as RequestHandler,
-    getApplicationById as RequestHandler,
-  )
-  .get(
-    '/job/:jobId',
-    authMiddleware as RequestHandler,
-    getApplicationsByJobId as RequestHandler,
-  )
-  .get(
-    '/applicant/:applicantId',
-    authMiddleware as RequestHandler,
-    getApplicationsByApplicantId as RequestHandler,
-  )
-  .patch(
-    '/:id',
-    authMiddleware as RequestHandler,
-    updateApplication as RequestHandler,
-  );
+  .post('/', authMiddleware, postApplication)
+  .get('/:applicationId', authMiddleware, getApplicationById)
+  .get('/job/:jobId', authMiddleware, getApplicationsByJobId)
+  .patch('/:applicationId', authMiddleware, updatedApplicationByJobCreator);
 
 export default applicationRouter;
