@@ -14,7 +14,7 @@ export const questionRouter = express.Router();
 questionRouter
   .post('/', authMiddleware, postNewQuestion)
   .get('/', getAllQuestions)
-  .get('/:id', authMiddleware, getQuestionById)
+  .get('/:id', getQuestionById)
   .patch('/:id', authMiddleware, updateQuestion)
   .delete('/:id', authMiddleware, deleteQuestion);
 

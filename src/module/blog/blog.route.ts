@@ -14,7 +14,7 @@ export const blogRouter = express.Router();
 blogRouter
   .get('/', getBlogPosts)
   .post('/', authMiddleware, createBlogPost)
-  .get('/:blogId', authMiddleware, getBlogPostById)
+  .get('/:blogId', getBlogPostById)
   .patch('/:blogId', authMiddleware, updateBlogPost)
   .delete('/:blogId', authMiddleware, deleteBlogPost)
   .post('/likes/:blogId', authMiddleware, likeBlogPost);
