@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IComment extends Document {
-  userId: mongoose.Types.ObjectId;
+  commentor: mongoose.Types.ObjectId;
   commentableType: 'Question' | 'Blog' | 'Job';
   commentableId: mongoose.Types.ObjectId;
   comment: string;
@@ -13,7 +13,7 @@ export interface IComment extends Document {
 
 const commentSchema: Schema<IComment> = new Schema(
   {
-    userId: {
+    commentor: {
       type: Schema.Types.ObjectId,
       required: true,
       ref: 'User',

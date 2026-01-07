@@ -81,7 +81,7 @@ export const signin = catchAsync(async (req, res) => {
       name: user.name,
       username: user.username,
       email: user.email,
-      id: user._id,
+      _id: user._id,
       bio: user.bio,
       profileImage: user.profileImage,
       location: user.location,

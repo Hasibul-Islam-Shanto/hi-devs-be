@@ -1,7 +1,6 @@
 import catchAsync from '@/utils/catch-async';
 import { paginate } from '@/utils/paginate';
 import { zParse } from '@/utils/z-parse';
-import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Comment from './comments.model';
 import {
@@ -20,7 +19,7 @@ export const postNewComment = catchAsync(async (req, res) => {
   }
 
   const newComment = new Comment({
-    userId,
+    commentor: userId,
     commentableType: query.commentableType,
     commentableId: query.commentableId,
     comment: body.comment,
@@ -50,7 +49,7 @@ export const getAllComments = catchAsync(async (req, res) => {
     limit,
     sortBy: 'createdAt',
     sortOrder: 'desc',
-    populate: { path: 'userId', select: 'name username' },
+    populate: { path: 'commentor', select: '_id name username profileImage' },
   });
 
   return res.status(200).json({
@@ -96,7 +95,9 @@ export const likeComment = catchAsync(async (req, res) => {
 
 export const deleteComment = catchAsync(async (req, res) => {
   const { params } = await zParse(commentIdParamSchema, req);
+  console.log('🚀 ~ params:', params);
   const userId = req.user?.userId;
+  console.log('🚀 ~ userId:', userId);
 
   if (!userId) {
     return res.status(401).json({ message: 'Unauthorized access' });
@@ -108,7 +109,7 @@ export const deleteComment = catchAsync(async (req, res) => {
     return res.status(404).json({ message: 'Comment not found' });
   }
 
-  if (comment.userId.toString() !== userId) {
+  if (comment.commentor.toString() !== userId) {
     return res.status(403).json({ message: 'Forbidden: Not your comment' });
   }
 
@@ -136,7 +137,7 @@ export const updateComment = catchAsync(async (req, res) => {
     return res.status(404).json({ message: 'Comment not found' });
   }
 
-  if (existingComment.userId.toString() !== userId) {
+  if (existingComment.commentor.toString() !== userId) {
     return res
       .status(403)
       .json({ message: 'Forbidden: You can only update your own comments' });
