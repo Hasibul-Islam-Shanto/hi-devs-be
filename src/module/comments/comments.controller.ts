@@ -2,6 +2,8 @@ import catchAsync from '@/utils/catch-async';
 import { paginate } from '@/utils/paginate';
 import { zParse } from '@/utils/z-parse';
 import mongoose from 'mongoose';
+import Blog from '../blog/blog.model';
+import Question from '../question/question.model';
 import Comment from './comments.model';
 import {
   addCommentSchema,
@@ -12,12 +14,26 @@ import {
 
 export const postNewComment = catchAsync(async (req, res) => {
   const { body, query } = await zParse(addCommentSchema, req);
+  console.log('🚀 ~ query:', query);
   const userId = req.user?.userId;
 
   if (!userId) {
     return res.status(401).json({ message: 'Unauthorized access' });
   }
 
+  if (query.commentableType === 'Question') {
+    const isExistQuestion = await Question.findById(query.commentableId);
+    if (!isExistQuestion) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+  }
+
+  if (query.commentableType === 'Blog') {
+    const isExistBlog = await Blog.findById(query.commentableId);
+    if (!isExistBlog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+  }
   const newComment = new Comment({
     commentor: userId,
     commentableType: query.commentableType,
