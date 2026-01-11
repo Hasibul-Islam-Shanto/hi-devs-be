@@ -10,6 +10,7 @@ export interface IJob extends Document {
   requiredSkills: string[];
   postedBy: mongoose.Types.ObjectId;
   status?: 'Open' | 'Closed';
+  expiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,8 +38,7 @@ const jobSchema: Schema = new Schema(
       enum: ['Open', 'Closed'],
       default: 'Open',
     },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
+    expiresAt: { type: Date },
   },
   { timestamps: true },
 );
