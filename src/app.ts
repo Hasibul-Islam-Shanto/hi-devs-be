@@ -4,6 +4,7 @@ import {
 } from '@/middlewares/common';
 import envs from './config/envs';
 import connectDB from './database';
+import { scheduleJobCronJobs } from './module/job/job.cron';
 import { app } from './server';
 
 app.use(globalNotFoundHandler);
@@ -12,6 +13,7 @@ app.use(globalErrorHandler);
 connectDB()
   .then(() => {
     console.log('Database connected successfully.');
+    scheduleJobCronJobs();
     app.listen(envs.port, () => {
       console.log(`Server running at http://localhost:${envs.port}`);
       console.log(
