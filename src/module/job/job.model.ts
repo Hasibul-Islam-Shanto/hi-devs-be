@@ -43,6 +43,7 @@ const jobSchema: Schema = new Schema(
   { timestamps: true },
 );
 
+jobSchema.index({ status: 1, expiresAt: 1 });
 const Job: Model<IJob> = mongoose.model<IJob>('Job', jobSchema);
 
 export default Job;

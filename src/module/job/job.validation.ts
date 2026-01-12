@@ -16,6 +16,20 @@ export const jobSchema = z.object({
     requiredSkills: z
       .array(z.string())
       .min(1, 'At least one skill is required'),
+    expiresAt: z
+      .string()
+      .datetime({
+        message:
+          'Invalid date format. Use ISO 8601 format (e.g., 2024-12-31T23:59:59Z)',
+      })
+      .optional()
+      .refine(
+        (date) => {
+          if (!date) return true; // Allow optional
+          return new Date(date) > new Date();
+        },
+        { message: 'Expiry date must be in the future' },
+      ),
   }),
 });
 
