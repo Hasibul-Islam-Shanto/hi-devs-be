@@ -5,7 +5,8 @@ import {
 import envs from './config/envs';
 import connectDB from './database';
 import { scheduleJobCronJobs } from './module/job/job.cron';
-import { app } from './server';
+import { app, httpServer } from './server';
+import { initializeSocket } from './socket/socket';
 
 app.use(globalNotFoundHandler);
 app.use(globalErrorHandler);
@@ -13,8 +14,9 @@ app.use(globalErrorHandler);
 connectDB()
   .then(() => {
     console.log('Database connected successfully.');
+    initializeSocket(httpServer);
     scheduleJobCronJobs();
-    app.listen(envs.port, () => {
+    httpServer.listen(envs.port, () => {
       console.log(`Server running at http://localhost:${envs.port}`);
       console.log(
         `Swagger docs available at http://localhost:${envs.port}/api-docs`,

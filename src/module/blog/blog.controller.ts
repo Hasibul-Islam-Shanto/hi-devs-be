@@ -4,6 +4,7 @@ import { paginate } from '@/utils/paginate';
 import { zParse } from '@/utils/z-parse';
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import { notifyLike } from '../notification/helper/like.notifier';
 import Blog from './blog.model';
 import {
   blogIdParamSchema,
@@ -144,14 +145,19 @@ export const likeBlogPost = catchAsync(async (req, res) => {
   if (!blog) {
     return res.status(404).json({ message: 'Blog post not found' });
   }
+  let isLiked = false;
 
   if (blog.likes.includes(new mongoose.Types.ObjectId(userId))) {
     blog.likes = blog.likes.filter((id) => id.toString() !== userId);
   } else {
     blog.likes.push(new mongoose.Types.ObjectId(userId));
+    isLiked = true;
   }
 
   await blog.save();
+  if (isLiked) {
+    await notifyLike(userId!, 'BLOG', blogId);
+  }
 
   return res.status(200).json({
     success: true,

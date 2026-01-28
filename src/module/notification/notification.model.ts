@@ -1,10 +1,14 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import {
+  NotificationResourceType,
+  NotificationType,
+} from './notification.type';
 
 export interface INotification extends Document {
-  recipientId: mongoose.Types.ObjectId;
-  senderId: mongoose.Types.ObjectId;
-  type: 'COMMENT' | 'LIKE' | 'FOLLOW' | 'MESSAGE' | 'APPLICATION' | 'REPLY';
-  resourceType: 'BLOG' | 'QUESTION' | 'JOB' | 'COMMENT' | 'APPLICATION';
+  recipient: mongoose.Types.ObjectId;
+  sender: mongoose.Types.ObjectId; // This should reference User model
+  type: NotificationType;
+  resourceType: NotificationResourceType;
   resourceId: mongoose.Types.ObjectId;
   message: string;
   isRead: boolean;
@@ -12,28 +16,50 @@ export interface INotification extends Document {
   updatedAt: Date;
 }
 
-const notificationSchema: Schema<INotification> = new Schema(
+const notificationSchema = new Schema<INotification>(
   {
-    recipientId: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
-    senderId: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+    recipient: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    sender: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     type: {
       type: String,
-      enum: ['COMMENT', 'LIKE', 'FOLLOW', 'MESSAGE', 'APPLICATION', 'REPLY'],
+      enum: ['COMMENT', 'APPLICATION', 'LIKE', 'REPLY'],
       required: true,
     },
     resourceType: {
       type: String,
-      enum: ['BLOG', 'QUESTION', 'JOB', 'COMMENT', 'APPLICATION'],
+      enum: ['BLOG', 'QUESTION', 'JOB', 'COMMENT'],
       required: true,
     },
-    resourceId: { type: Schema.Types.ObjectId, required: true },
-    message: { type: String, required: true },
-    isRead: { type: Boolean, default: false },
+    resourceId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+    },
+    message: {
+      type: String,
+      required: true,
+    },
+    isRead: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+  },
 );
 
-notificationSchema.index({ recipientId: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 });
+
 const Notification: Model<INotification> = mongoose.model<INotification>(
   'Notification',
   notificationSchema,
