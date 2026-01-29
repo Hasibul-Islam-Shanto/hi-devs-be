@@ -2,6 +2,7 @@ import catchAsync from '@/utils/catch-async';
 import { paginate } from '@/utils/paginate';
 import { zParse } from '@/utils/z-parse';
 import Job from '../job/job.model';
+import { notifyJobApplication } from '../notification/helper/application.notifier';
 import Application from './application.model';
 import {
   applicationIdParamSchema,
@@ -46,6 +47,9 @@ export const postApplication = catchAsync(async (req, res) => {
 
   const savedApplication = await newApplication.save();
 
+  notifyJobApplication(userId!, body.jobId).catch((error) =>
+    console.error('Failed to send notification:', error),
+  );
   return res.status(201).json({
     message: 'Application submitted successfully',
     application: savedApplication,

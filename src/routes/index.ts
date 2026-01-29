@@ -2,6 +2,7 @@ import applicationRouter from '@/module/applications/application.route';
 import { blogRouter } from '@/module/blog/blog.route';
 import commentsRouter from '@/module/comments/comments.route';
 import jobRouter from '@/module/job/job.route';
+import notificationRouter from '@/module/notification/notification.route';
 import { questionRouter } from '@/module/question/question.route';
 import express from 'express';
 import { authRouter } from '../module/auth/auth.route';
@@ -42,6 +43,10 @@ const routes: RouterConfig[] = [
   {
     path: '/applications',
     router: applicationRouter,
+  },
+  {
+    path: '/notifications',
+    router: notificationRouter,
   },
 ];
 

@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import Job from './job.model';
 
 export const scheduleJobCronJobs = () => {
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('*/5 * * * *', async () => {
     try {
       const result = await Job.updateMany(
         {

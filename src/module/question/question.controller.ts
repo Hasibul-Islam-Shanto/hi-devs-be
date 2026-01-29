@@ -3,6 +3,7 @@ import { paginate } from '@/utils/paginate';
 import { zParse } from '@/utils/z-parse';
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import { notifyLike } from '../notification/helper/like.notifier';
 import Question from './question.model';
 import {
   getAllQuestionsSchema,
@@ -158,6 +159,7 @@ export const likeQuestion = catchAsync(async (req, res) => {
   }
 
   const question = await Question.findById(questionId);
+  let isLiked = false;
 
   if (!question) {
     return res.status(404).json({ message: 'Question not found' });
@@ -167,9 +169,14 @@ export const likeQuestion = catchAsync(async (req, res) => {
     question.likes = question.likes.filter((id) => id.toString() !== userId);
   } else {
     question.likes.push(convertedUserId);
+    isLiked = true;
   }
 
   await question.save();
+
+  if (isLiked) {
+    await notifyLike(userId, 'QUESTION', questionId);
+  }
 
   return res.status(200).json({
     success: true,

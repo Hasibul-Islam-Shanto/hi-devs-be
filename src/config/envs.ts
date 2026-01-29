@@ -22,6 +22,7 @@ const envVarSchema = z.object({
     .number()
     .default(30)
     .describe('Refresh token expiration time in minutes'),
+  CLIENT_URL: z.string().url().default('http://localhost:3000'),
 });
 
 const envVars = envVarSchema.safeParse(process.env);
@@ -39,4 +40,5 @@ export default {
     accessTokenExpiresIn: envVars.data.ACCESS_TOKEN_EXPIRES_IN,
     refreshTokenExpiresIn: envVars.data.REFRESH_TOKEN_EXPIRES_IN,
   },
+  clientUrl: envVars.data.CLIENT_URL,
 };

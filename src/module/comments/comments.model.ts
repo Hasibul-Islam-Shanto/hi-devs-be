@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IComment extends Document {
   commentor: mongoose.Types.ObjectId;
-  commentableType: 'Question' | 'Blog' | 'Job';
+  commentableType: 'QUESTION' | 'BLOG' | 'JOB';
   commentableId: mongoose.Types.ObjectId;
   comment: string;
   likes: mongoose.Types.ObjectId[];
@@ -21,7 +21,7 @@ const commentSchema: Schema<IComment> = new Schema(
     commentableType: {
       type: String,
       required: true,
-      enum: ['Question', 'Blog', 'Job'],
+      enum: ['QUESTION', 'BLOG', 'JOB'],
     },
     commentableId: {
       type: Schema.Types.ObjectId,

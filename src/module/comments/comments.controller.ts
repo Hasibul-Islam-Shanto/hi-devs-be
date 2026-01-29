@@ -3,6 +3,8 @@ import { paginate } from '@/utils/paginate';
 import { zParse } from '@/utils/z-parse';
 import mongoose from 'mongoose';
 import Blog from '../blog/blog.model';
+import { notifyComment } from '../notification/helper/comment.notifier';
+import { notifyLike } from '../notification/helper/like.notifier';
 import Question from '../question/question.model';
 import Comment from './comments.model';
 import {
@@ -14,21 +16,21 @@ import {
 
 export const postNewComment = catchAsync(async (req, res) => {
   const { body, query } = await zParse(addCommentSchema, req);
-  console.log('🚀 ~ query:', query);
   const userId = req.user?.userId;
+  console.log('🚀 ~ userId:', userId);
 
   if (!userId) {
     return res.status(401).json({ message: 'Unauthorized access' });
   }
 
-  if (query.commentableType === 'Question') {
+  if (query.commentableType === 'QUESTION') {
     const isExistQuestion = await Question.findById(query.commentableId);
     if (!isExistQuestion) {
       return res.status(404).json({ message: 'Question not found' });
     }
   }
 
-  if (query.commentableType === 'Blog') {
+  if (query.commentableType === 'BLOG') {
     const isExistBlog = await Blog.findById(query.commentableId);
     if (!isExistBlog) {
       return res.status(404).json({ message: 'Blog not found' });
@@ -42,6 +44,12 @@ export const postNewComment = catchAsync(async (req, res) => {
   });
 
   await newComment.save();
+
+  notifyComment(
+    userId,
+    query.commentableType as 'BLOG' | 'QUESTION',
+    query.commentableId,
+  ).catch((error) => console.error('Failed to send notification:', error));
 
   return res.status(201).json({
     success: true,
@@ -87,6 +95,7 @@ export const likeComment = catchAsync(async (req, res) => {
   const convertedUserId = new mongoose.Types.ObjectId(userId);
 
   const comment = await Comment.findById(commentId);
+  let isLiked = false;
 
   if (!comment) {
     return res.status(404).json({ message: 'Comment not found' });
@@ -98,9 +107,13 @@ export const likeComment = catchAsync(async (req, res) => {
     );
   } else {
     comment.likes.push(convertedUserId);
+    isLiked = true;
   }
 
   await comment.save();
+  if (isLiked) {
+    await notifyLike(userId, 'COMMENT', commentId);
+  }
 
   return res.status(200).json({
     success: true,

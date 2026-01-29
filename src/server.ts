@@ -1,3 +1,4 @@
+import { createServer } from 'http';
 import path from 'path';
 import bodyParser from 'body-parser';
 import compression from 'compression';
@@ -10,6 +11,7 @@ import { swaggerSpec } from './config/swaggerConfig';
 import router from './routes';
 
 const app = express();
+const httpServer = createServer(app);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -22,4 +24,4 @@ app.use(morgan('dev'));
 app.use('/api', router);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-export { app };
+export { app, httpServer };
