@@ -5,6 +5,7 @@ import {
   deleteBlogPost,
   getBlogPostById,
   getBlogPosts,
+  getUsersBlogs,
   likeBlogPost,
   updateBlogPost,
 } from './blog.controller';
@@ -15,6 +16,7 @@ blogRouter
   .get('/', getBlogPosts)
   .post('/', authMiddleware, createBlogPost)
   .get('/:blogId', getBlogPostById)
+  .get('/users/blogs', authMiddleware, getUsersBlogs)
   .patch('/:blogId', authMiddleware, updateBlogPost)
   .delete('/:blogId', authMiddleware, deleteBlogPost)
   .post('/likes/:blogId', authMiddleware, likeBlogPost);
