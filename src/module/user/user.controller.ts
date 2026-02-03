@@ -103,3 +103,18 @@ export const updateUserProfile = catchAsync(async (req, res) => {
     user: updatedUser,
   });
 });
+
+export const getUserById = catchAsync(async (req, res) => {
+  const userId = req.params.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized access' });
+  }
+
+  const user = await User.findById(userId).select('-password');
+
+  res.status(200).json({
+    success: true,
+    user,
+  });
+});

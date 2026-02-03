@@ -7,16 +7,16 @@ export const updateUserProfileSchema = z.object({
     bio: z.string().max(500).optional(),
     skills: z.array(z.string()).optional(),
     location: z.string().max(100).optional(),
-    website: z.string().url().optional(),
+    website: z.string().optional(),
     socialLinks: z
       .object({
-        twitter: z.string().url().optional(),
-        linkedin: z.string().url().optional(),
-        github: z.string().url().optional(),
-        facebook: z.string().url().optional(),
+        twitter: z.string().optional(),
+        linkedin: z.string().optional(),
+        github: z.string().optional(),
+        facebook: z.string().optional(),
       })
       .optional(),
-    profileImage: z.string().url().optional(),
+    profileImage: z.string().optional(),
   }),
 });
 
