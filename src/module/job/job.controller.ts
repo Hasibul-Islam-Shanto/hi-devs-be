@@ -1,6 +1,7 @@
 import catchAsync from '@/utils/catch-async';
 import { paginate } from '@/utils/paginate';
 import { zParse } from '@/utils/z-parse';
+import mongoose from 'mongoose';
 import Job from './job.model';
 import {
   getAllJobsSchema,
@@ -100,5 +101,37 @@ export const updateJob = catchAsync(async (req, res) => {
     success: true,
     message: 'Job updated successfully',
     job: updatedJob,
+  });
+});
+
+export const getUsersJobs = catchAsync(async (req, res) => {
+  const { query } = await zParse(getAllJobsSchema, req);
+  const page = parseInt(query.page) || 1;
+  const limit = parseInt(query.limit) || 10;
+  const userId = req.user?.userId;
+
+  const searchFilter: Record<string, unknown> = {
+    postedBy: new mongoose.Types.ObjectId(userId),
+  };
+
+  if (query.search) {
+    searchFilter.$or = [
+      { title: { $regex: query.search, $options: 'i' } },
+      { location: { $regex: query.search, $options: 'i' } },
+      { salaryRange: { $regex: query.search, $options: 'i' } },
+    ];
+  }
+  const result = await paginate(Job, searchFilter, {
+    page,
+    limit,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
+    populate: { path: 'postedBy', select: 'name profileImage' },
+  });
+
+  return res.status(200).json({
+    success: true,
+    jobs: result.data,
+    pagination: result.pagination,
   });
 });

@@ -165,3 +165,42 @@ export const likeBlogPost = catchAsync(async (req, res) => {
     likes: blog.likes,
   });
 });
+
+export const getUsersBlogs = catchAsync(async (req, res) => {
+  const { query } = await zParse(getAllBlogPostsSchema, req);
+  const page = parseInt(query.page) || 1;
+  const limit = parseInt(query.limit) || 10;
+  const userId = req?.user?.userId;
+
+  if (!userId) {
+    return res
+      .status(401)
+      .json({ message: 'You are not authorized to access this resource' });
+  }
+
+  const searchFilter: Record<string, unknown> = {
+    postedBy: new mongoose.Types.ObjectId(userId),
+  };
+
+  if (query.search) {
+    searchFilter.$or = [
+      { title: { $regex: query.search, $options: 'i' } },
+      { description: { $regex: query.search, $options: 'i' } },
+      { tags: { $regex: query.search, $options: 'i' } },
+    ];
+  }
+
+  const result = await paginate(Blog, searchFilter, {
+    page,
+    limit,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
+    populate: { path: 'postedBy', select: 'name _id profileImage' },
+  });
+
+  return res.status(200).json({
+    success: true,
+    blogs: result.data,
+    pagination: result.pagination,
+  });
+});

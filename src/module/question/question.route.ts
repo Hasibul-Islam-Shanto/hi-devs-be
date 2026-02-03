@@ -4,6 +4,7 @@ import {
   deleteQuestion,
   getAllQuestions,
   getQuestionById,
+  getUsersQuestions,
   likeQuestion,
   postNewQuestion,
   updateQuestion,
@@ -15,6 +16,7 @@ questionRouter
   .post('/', authMiddleware, postNewQuestion)
   .get('/', getAllQuestions)
   .get('/:id', getQuestionById)
+  .get('/users/questions', authMiddleware, getUsersQuestions)
   .patch('/:id', authMiddleware, updateQuestion)
   .delete('/:id', authMiddleware, deleteQuestion);
 

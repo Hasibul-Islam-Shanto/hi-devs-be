@@ -184,3 +184,44 @@ export const likeQuestion = catchAsync(async (req, res) => {
     likes: question.likes,
   });
 });
+
+export const getUsersQuestions = catchAsync(
+  async (req: Request, res: Response) => {
+    const { query } = await zParse(getAllQuestionsSchema, req);
+    const page = parseInt(query.page) || 1;
+    const limit = parseInt(query.limit) || 10;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ message: 'You are not authorized to access this resource' });
+    }
+
+    const searchFilter: Record<string, unknown> = {
+      askedBy: new mongoose.Types.ObjectId(userId),
+    };
+
+    if (query.search) {
+      searchFilter.$or = [
+        { title: { $regex: query.search, $options: 'i' } },
+        { description: { $regex: query.search, $options: 'i' } },
+        { tags: { $regex: query.search, $options: 'i' } },
+      ];
+    }
+
+    const result = await paginate(Question, searchFilter, {
+      page,
+      limit,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+      populate: { path: 'askedBy', select: 'name username profileImage' },
+    });
+
+    res.status(200).json({
+      success: true,
+      questions: result.data,
+      pagination: result.pagination,
+    });
+  },
+);
