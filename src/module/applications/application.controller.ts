@@ -58,6 +58,18 @@ export const postApplication = catchAsync(async (req, res) => {
 
 export const getApplicationsByJobId = catchAsync(async (req, res) => {
   const { query, params } = await zParse(getAllApplicationsSchema, req);
+  const userId = req?.user?.userId;
+  const job = await Job.findById(params.jobId);
+
+  if (!job) {
+    return res.status(404).json({ message: 'Job not found' });
+  }
+
+  if (job?.postedBy.toString() !== userId) {
+    return res.status(403).json({
+      message: 'You are not authorized to view this job applications',
+    });
+  }
 
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 10;
@@ -87,24 +99,42 @@ export const getApplicationsByJobId = catchAsync(async (req, res) => {
 
 export const getApplicationById = catchAsync(async (req, res) => {
   const { params } = await zParse(applicationIdParamSchema, req);
+  const userId = req?.user?.userId;
 
-  const application = await Application.findById({ _id: params.applicationId })
-    .populate('jobId', 'title company')
-    .populate('applicantId', 'name email');
+  const application = await Application.findById(params.applicationId)
+    .populate('jobId', 'title company postedBy')
+    .populate('applicantId', 'name email username profileImage');
 
   if (!application) {
     return res.status(400).json({ message: 'Application not found' });
   }
 
-  if (application.applicantId._id.toString() !== req?.user?.userId) {
+  const applicantIdStr = application.applicantId._id.toString();
+  const isApplicant = applicantIdStr === userId;
+
+  const job = application.jobId as typeof application.jobId & {
+    postedBy?: { toString(): string };
+  };
+  const postedById =
+    job && typeof job === 'object' && 'postedBy' in job && job.postedBy
+      ? job.postedBy.toString()
+      : null;
+  const isJobOwner = postedById !== null && postedById === userId;
+
+  if (!isApplicant && !isJobOwner) {
     return res
       .status(403)
       .json({ message: 'You are not authorized to view this application' });
   }
+  const applicationWithRoles = {
+    application,
+    isJobOwner,
+    isApplicant,
+  };
 
   return res.status(200).json({
     message: 'Application retrieved successfully',
-    application,
+    applicationWithRoles,
   });
 });
 
