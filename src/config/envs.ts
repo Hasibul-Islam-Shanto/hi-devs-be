@@ -23,6 +23,8 @@ const envVarSchema = z.object({
     .default(30)
     .describe('Refresh token expiration time in minutes'),
   CLIENT_URL: z.string().url().default('http://localhost:3000'),
+  API_RATE_LIMIT_MAX: z.coerce.number().default(5000),
+  API_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(15 * 60 * 1000),
 });
 
 const envVars = envVarSchema.safeParse(process.env);
@@ -41,4 +43,8 @@ export default {
     refreshTokenExpiresIn: envVars.data.REFRESH_TOKEN_EXPIRES_IN,
   },
   clientUrl: envVars.data.CLIENT_URL,
+  apiRateLimit: {
+    max: envVars.data.API_RATE_LIMIT_MAX,
+    windowMs: envVars.data.API_RATE_LIMIT_WINDOW_MS,
+  },
 };
