@@ -2,7 +2,7 @@ import { INotification } from '@/module/notification/notification.model';
 import { getIO } from '@/socket/socket';
 import { isUserOnline } from '@/socket/socket.handlers';
 
-export const sendNotificationToUser = (
+export const sendNotificationToUser = async (
   userId: string,
   notification: INotification,
 ) => {
@@ -14,7 +14,7 @@ export const sendNotificationToUser = (
   }
 
   console.log(`📤 Attempting to send notification to user: ${userId}`);
-  console.log(`🔍 User online status: ${isUserOnline(userId)}`);
+  console.log(`🔍 User online status: ${await isUserOnline(userId)}`);
   console.log(`📧 Notification:`, JSON.stringify(notification, null, 2));
 
   // Emit to user's personal room
@@ -37,6 +37,8 @@ export const broadcastNotification = (event: string, data: INotification) => {
   return true;
 };
 
-export const checkUserOnlineStatus = (userId: string): boolean => {
+export const checkUserOnlineStatus = async (
+  userId: string,
+): Promise<boolean> => {
   return isUserOnline(userId);
 };

@@ -16,8 +16,8 @@ export const initializeSocket = (httpServer: HTTPServer) => {
   io = new Server(httpServer, socketConfig);
   io.use(authenticateSocket);
 
-  io.on('connection', (socket: AuthenticatedSocket) => {
-    handleConnection(socket);
+  io.on('connection', async (socket: AuthenticatedSocket) => {
+    await handleConnection(socket);
     handleMarkAsRead(socket);
     handleMarkAllAsRead(socket);
     handleDisconnect(socket);

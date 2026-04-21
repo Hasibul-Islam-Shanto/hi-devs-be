@@ -25,6 +25,7 @@ const envVarSchema = z.object({
   CLIENT_URL: z.string().url().default('http://localhost:3000'),
   API_RATE_LIMIT_MAX: z.coerce.number().default(5000),
   API_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(15 * 60 * 1000),
+  REDIS_URL: z.string().default('redis://localhost:6379'),
 });
 
 const envVars = envVarSchema.safeParse(process.env);
@@ -47,4 +48,5 @@ export default {
     max: envVars.data.API_RATE_LIMIT_MAX,
     windowMs: envVars.data.API_RATE_LIMIT_WINDOW_MS,
   },
+  redisUrl: envVars.data.REDIS_URL,
 };

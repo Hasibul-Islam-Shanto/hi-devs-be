@@ -1,9 +1,15 @@
+import redis from '@/config/redis';
 import { sendNotificationToUser } from '@/utils/notification-sender';
 import Notification from './notification.model';
 import {
   CreateNotificationData,
   NotificationResponse,
 } from './notification.type';
+
+const unreadKey = (userId: string) => `unread_count:${userId}`;
+const UNREAD_COUNT_TTL = 300; // 5 minutes
+
+const invalidateUnreadCount = (userId: string) => redis.del(unreadKey(userId));
 
 export const createNotification = async (data: CreateNotificationData) => {
   const notification = await Notification.create(data);
@@ -31,7 +37,8 @@ export const createAndSendNotification = async (
   );
 
   if (populatedNotification) {
-    sendNotificationToUser(data.recipient, populatedNotification);
+    await sendNotificationToUser(data.recipient, populatedNotification);
+    await invalidateUnreadCount(data.recipient);
   }
 
   return populatedNotification;
@@ -52,7 +59,7 @@ export const getUserNotifications = async (
       .limit(limit)
       .lean(),
     Notification.countDocuments({ recipient: userId }),
-    Notification.countDocuments({ recipient: userId, isRead: false }),
+    getUnreadCount(userId),
   ]);
 
   return {
@@ -76,6 +83,9 @@ export const markNotificationAsRead = async (
     { isRead: true },
     { new: true },
   );
+  if (notification) {
+    await invalidateUnreadCount(userId);
+  }
   return notification;
 };
 
@@ -85,6 +95,7 @@ export const markAllNotificationsAsRead = async (userId: string) => {
     { recipient: userId, isRead: false },
     { isRead: true },
   );
+  await invalidateUnreadCount(userId);
   return result;
 };
 
@@ -97,14 +108,21 @@ export const deleteNotification = async (
     _id: notificationId,
     recipient: userId,
   });
+  if (result) {
+    await invalidateUnreadCount(userId);
+  }
   return result;
 };
 
-// Get unread count
+// Get unread count — Redis cache-aside, 5-min TTL
 export const getUnreadCount = async (userId: string): Promise<number> => {
+  const cached = await redis.get(unreadKey(userId));
+  if (cached !== null) return parseInt(cached);
+
   const count = await Notification.countDocuments({
     recipient: userId,
     isRead: false,
   });
+  await redis.set(unreadKey(userId), count, 'EX', UNREAD_COUNT_TTL);
   return count;
 };
