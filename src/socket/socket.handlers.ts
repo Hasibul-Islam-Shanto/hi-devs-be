@@ -1,28 +1,28 @@
+import redis from '@/config/redis';
 import Notification from '@/module/notification/notification.model';
 import { AuthenticatedSocket } from './socket.types';
 
-const userSockets = new Map<string, string>();
+const ONLINE_USER_TTL = 24 * 60 * 60; // 24 hours in seconds
+const onlineKey = (userId: string) => `online:${userId}`;
 
-export const handleConnection = (socket: AuthenticatedSocket) => {
+export const handleConnection = async (socket: AuthenticatedSocket) => {
   const userId = socket.userId;
 
   if (userId) {
-    userSockets.set(userId, socket.id);
+    await redis.set(onlineKey(userId), socket.id, 'EX', ONLINE_USER_TTL);
     socket.join(`user:${userId}`);
     console.log(`✅ User ${userId} connected (socket: ${socket.id})`);
-    console.log(`📊 Total connected users: ${userSockets.size}`);
   } else {
     console.warn('⚠️ Socket connected without userId');
   }
 };
 
 export const handleDisconnect = (socket: AuthenticatedSocket) => {
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     const userId = socket.userId;
     if (userId) {
-      userSockets.delete(userId);
+      await redis.del(onlineKey(userId));
       console.log(`❌ User ${userId} disconnected`);
-      console.log(`📊 Total connected users: ${userSockets.size}`);
     }
   });
 };
@@ -32,6 +32,9 @@ export const handleMarkAsRead = (socket: AuthenticatedSocket) => {
     console.log(`📖 Mark as read request: ${notificationId}`);
     try {
       await Notification.findByIdAndUpdate(notificationId, { isRead: true });
+      if (socket.userId) {
+        await redis.del(`unread_count:${socket.userId}`);
+      }
       socket.emit('notification:read:success', { notificationId });
       console.log(`✅ Marked as read: ${notificationId}`);
     } catch (error) {
@@ -58,6 +61,7 @@ export const handleMarkAllAsRead = (socket: AuthenticatedSocket) => {
         { recipient: userId, isRead: false },
         { isRead: true },
       );
+      await redis.del(`unread_count:${userId}`);
 
       socket.emit('notification:read-all:success', {
         message: 'All notifications marked as read',
@@ -72,8 +76,10 @@ export const handleMarkAllAsRead = (socket: AuthenticatedSocket) => {
   });
 };
 
-export const getUserSockets = () => userSockets;
+export const getSocketId = (userId: string): Promise<string | null> =>
+  redis.get(onlineKey(userId));
 
-export const isUserOnline = (userId: string): boolean => {
-  return userSockets.has(userId);
+export const isUserOnline = async (userId: string): Promise<boolean> => {
+  const result = await redis.exists(onlineKey(userId));
+  return result === 1;
 };

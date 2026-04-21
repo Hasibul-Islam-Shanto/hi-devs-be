@@ -1,3 +1,4 @@
+import redis from '@/config/redis';
 import catchAsync from '@/utils/catch-async';
 import { zParse } from '@/utils/z-parse';
 import bcrypt from 'bcryptjs';
@@ -7,12 +8,14 @@ import {
   verifyRefreshToken,
 } from '../../utils/token.utils';
 import User from '../user/user.model';
-import RefreshToken from './auth.model';
 import {
   refreshTokenSchema,
   signinSchema,
   signupSchema,
 } from './auth.validation';
+
+const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
+const refreshKey = (token: string) => `refresh_token:${token}`;
 
 export const signup = catchAsync(async (req, res) => {
   const { body } = await zParse(signupSchema, req);
@@ -63,16 +66,14 @@ export const signin = catchAsync(async (req, res) => {
   }
 
   const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
+  const newRefreshToken = generateRefreshToken(user);
 
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7);
-
-  await RefreshToken.create({
-    token: refreshToken,
-    user: user._id,
-    expiresAt,
-  });
+  await redis.set(
+    refreshKey(newRefreshToken),
+    String(user._id),
+    'EX',
+    REFRESH_TOKEN_TTL,
+  );
 
   res.status(200).json({
     success: true,
@@ -92,7 +93,7 @@ export const signin = catchAsync(async (req, res) => {
     },
     tokens: {
       accessToken,
-      refreshToken,
+      refreshToken: newRefreshToken,
     },
   });
 });
@@ -105,36 +106,34 @@ export const refreshToken = catchAsync(async (req, res) => {
     return res.status(400).json({ message: 'Refresh token is required' });
   }
 
-  const storedToken = await RefreshToken.findOne({ token: refreshToken });
+  const storedUserId = await redis.get(refreshKey(refreshToken));
 
-  if (!storedToken) {
-    return res.status(401).json({ message: 'Invalid refresh token' });
+  if (!storedUserId) {
+    return res
+      .status(401)
+      .json({ message: 'Invalid or expired refresh token' });
   }
 
-  if (storedToken.expiresAt < new Date()) {
-    await RefreshToken.findByIdAndDelete(storedToken._id);
-    return res.status(401).json({ message: 'Refresh token has expired' });
-  }
+  // Verify JWT signature to ensure token wasn't tampered with
+  verifyRefreshToken(refreshToken);
 
-  const { userId } = verifyRefreshToken(refreshToken);
-
-  const user = await User.findById(userId);
+  const user = await User.findById(storedUserId);
   if (!user) {
+    await redis.del(refreshKey(refreshToken));
     return res.status(404).json({ message: 'User not found' });
   }
 
   const newAccessToken = generateAccessToken(user);
   const newRefreshToken = generateRefreshToken(user);
 
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7);
-
-  await RefreshToken.findByIdAndDelete(storedToken._id);
-  await RefreshToken.create({
-    token: newRefreshToken,
-    user: user._id,
-    expiresAt,
-  });
+  // Rotate: delete old token, store new one
+  await redis.del(refreshKey(refreshToken));
+  await redis.set(
+    refreshKey(newRefreshToken),
+    String(user._id),
+    'EX',
+    REFRESH_TOKEN_TTL,
+  );
 
   res.status(200).json({
     success: true,
@@ -152,7 +151,7 @@ export const logout = catchAsync(async (req, res) => {
     return res.status(400).json({ message: 'Refresh token is required' });
   }
 
-  await RefreshToken.findOneAndDelete({ token: refreshToken });
+  await redis.del(refreshKey(refreshToken));
 
   res.status(200).json({ success: true, message: 'Logout successful' });
 });
